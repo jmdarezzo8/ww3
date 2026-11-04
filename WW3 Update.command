@@ -20,8 +20,12 @@ else
   git -c core.fileMode=false pull --ff-only
   if [ "$?" -eq 0 ]; then
     echo ""
-    echo "Update complete. Open WW3 in Unity Hub and press Play."
-    echo "First-time initialization may generate a prototype soldier scene."
+    echo "Update downloaded successfully."
+    if [ -f "WW3 Install Soldier.command" ]; then
+      bash "WW3 Install Soldier.command"
+    fi
+    echo ""
+    echo "Open WW3 in Unity Hub and press Play. A first-time GLB import can take time."
   else
     echo ""
     echo "Update stopped safely. See Git message above."
