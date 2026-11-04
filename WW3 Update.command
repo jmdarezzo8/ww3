@@ -1,28 +1,30 @@
 #!/bin/bash
-# WW3 Unity project updater for macOS.
-# Double-click this file inside your WW3 project folder.
+# WW3 updater — safely fetch approved changes from the default branch.
 cd "$(dirname "$0")" || exit 1
 echo "==========================================="
-echo "       WW3 - Update from GitHub"
+echo "         WW3 - Update from GitHub"
 echo "==========================================="
 echo ""
 if ! command -v git >/dev/null 2>&1; then
-  echo "ERROR: Git was not found. Install Xcode Command Line Tools."
+  echo "ERROR: Git not available."
 elif [ ! -d ".git" ]; then
-  echo "ERROR: Place this updater inside the WW3 project folder."
-elif [ -n "$(git status --porcelain)" ]; then
-  echo "No changes downloaded: you have local project changes."
-  echo "Please commit or review them before updating."
+  echo "ERROR: Keep this updater inside your WW3 project folder."
+elif [ "$(git branch --show-current)" != "main" ]; then
+  echo "Update stopped: currently on a development branch."
+  echo "Switch back to main before using the regular updater."
+elif ! git -c core.fileMode=false diff --quiet || ! git diff --cached --quiet; then
+  echo "Update stopped: tracked files have unsaved Git changes."
+  echo "Your work has NOT been overwritten."
 else
-  echo "Checking GitHub for changes..."
-  git pull --ff-only
-  result=$?
-  if [ "$result" -eq 0 ]; then
+  echo "Checking for WW3 updates..."
+  git -c core.fileMode=false pull --ff-only
+  if [ "$?" -eq 0 ]; then
     echo ""
-    echo "Update complete! Open WW3 in Unity Hub."
+    echo "Update complete. Open WW3 in Unity Hub and press Play."
+    echo "First-time initialization may generate a prototype soldier scene."
   else
     echo ""
-    echo "Update stopped safely. See the Git message above."
+    echo "Update stopped safely. See Git message above."
   fi
 fi
 echo ""
