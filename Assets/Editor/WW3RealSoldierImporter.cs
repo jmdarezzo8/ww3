@@ -24,10 +24,7 @@ public static class WW3RealSoldierImporter
     {
         if (EditorApplication.isCompiling || EditorApplication.isPlayingOrWillChangePlaymode) return;
         if (AssetDatabase.LoadAssetAtPath<SceneAsset>(ScenePath) != null) return;
-        string[] modelIds = AssetDatabase.FindAssets("t:Model", new[] { ModelFolder });
-        if (modelIds.Length == 0) return;
-        string path = AssetDatabase.GUIDToAssetPath(modelIds[0]);
-        GameObject model = AssetDatabase.LoadAssetAtPath<GameObject>(path);
+        GameObject model = FindSoldierModel();
         if (model == null) return;
         // Do not discard the user's unsaved editor work.
         if (!EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo()) return;
@@ -40,9 +37,7 @@ public static class WW3RealSoldierImporter
         GameObject model = Selection.activeObject as GameObject;
         if (model == null)
         {
-            string[] ids = AssetDatabase.FindAssets("t:Model", new[] { ModelFolder });
-            if (ids.Length > 0)
-                model = AssetDatabase.LoadAssetAtPath<GameObject>(AssetDatabase.GUIDToAssetPath(ids[0]));
+            model = FindSoldierModel();
         }
         if (model == null || !AssetDatabase.Contains(model))
         {
@@ -52,6 +47,28 @@ public static class WW3RealSoldierImporter
         }
         if (!EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo()) return;
         Build(model);
+    }
+
+    private static GameObject FindSoldierModel()
+    {
+        // glTFast imports GLB as a native Unity prefab-like asset. Do not depend
+        // on the t:Model asset search filter (which varies by importer).
+        const string preferred = ModelFolder + "/soldier_low_poly_mesh_game_ready_4k_pbr_rigged.glb";
+        GameObject known = AssetDatabase.LoadAssetAtPath<GameObject>(preferred);
+        if (known != null) return known;
+
+        if (!AssetDatabase.IsValidFolder(ModelFolder)) return null;
+        string[] ids = AssetDatabase.FindAssets("", new[] { ModelFolder });
+        foreach (string id in ids)
+        {
+            string path = AssetDatabase.GUIDToAssetPath(id);
+            if (!path.EndsWith(".glb", StringComparison.OrdinalIgnoreCase)
+                && !path.EndsWith(".fbx", StringComparison.OrdinalIgnoreCase)
+                && !path.EndsWith(".prefab", StringComparison.OrdinalIgnoreCase)) continue;
+            GameObject candidate = AssetDatabase.LoadAssetAtPath<GameObject>(path);
+            if (candidate != null) return candidate;
+        }
+        return null;
     }
 
     private static void Build(GameObject source)
