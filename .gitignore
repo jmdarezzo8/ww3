@@ -112,3 +112,12 @@ InitTestScene*.unity*
 
 # Auto-generated cache in Assets folder
 /[Aa]ssets/[Ss]ceneDependencyCache*
+
+# WW3 locally licensed character meshes (large binary assets; install locally)
+/Assets/WW3/Characters/Soldier01/Models/*.glb
+/Assets/WW3/Characters/Soldier01/Models/*.gltf
+/Assets/WW3/Characters/Soldier01/Models/*.bin
+/Assets/WW3/Characters/Soldier01/RIG_AUDIT.txt
+/Assets/WW3/Scenes/WW3_RealSoldierTest.unity
+/Assets/WW3/Scenes/WW3_RealSoldierTest.unity.meta
+/Assets/WW3/Characters/Soldier01/Models/*.glb.meta
