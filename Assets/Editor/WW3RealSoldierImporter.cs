@@ -38,12 +38,20 @@ public static class WW3RealSoldierImporter
     private static void TryCreateFromImportedModel()
     {
         if (EditorApplication.isCompiling || EditorApplication.isPlayingOrWillChangePlaymode) return;
-        if (AssetDatabase.LoadAssetAtPath<SceneAsset>(ScenePath) != null) return;
         GameObject model = FindSoldierModel();
-        if (model == null) return;
-        // Do not discard the user's unsaved editor work.
+        if (model == null)
+        {
+            Debug.LogWarning("WW3: Real soldier GLB is not imported as a GameObject. Check whether the .glb exists in Assets/WW3/Characters/Soldier01/Models and glTFast is installed.");
+            return;
+        }
+        // Open the REAL soldier scene after this update. The older WW3_CharacterTest
+        // scene contains only the simple geometry prototype.
+        const string versionKey = "WW3_Soldier_Scene_V2";
+        if (EditorPrefs.GetBool(versionKey, false) &&
+            AssetDatabase.LoadAssetAtPath<SceneAsset>(ScenePath) != null) return;
         if (!EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo()) return;
         Build(model);
+        EditorPrefs.SetBool(versionKey, true);
     }
 
     [MenuItem("WW3/Character/Build Real Soldier Test")]
@@ -108,13 +116,20 @@ public static class WW3RealSoldierImporter
         visual.transform.SetParent(player.transform, false);
         visual.transform.localPosition = Vector3.zero;
 
+        Renderer[] visibleMeshes = visual.GetComponentsInChildren<Renderer>(true);
+        if (visibleMeshes.Length == 0)
+        {
+            Debug.LogError("WW3: Imported soldier has zero renderers! The GLB did not import its mesh. No empty test scene will be saved.");
+            UnityEngine.Object.DestroyImmediate(player);
+            return;
+        }
         Bounds bounds = GetBounds(visual);
         if (bounds.size.y > 0.01f)
         {
             float scale = Mathf.Clamp(1.8f / bounds.size.y, 0.01f, 100f);
             visual.transform.localScale *= scale;
             bounds = GetBounds(visual);
-            visual.transform.localPosition += Vector3.up * (-bounds.min.y);
+            visual.transform.position += Vector3.up * (-bounds.min.y);
         }
 
         var floor = GameObject.CreatePrimitive(PrimitiveType.Plane);
@@ -131,12 +146,24 @@ public static class WW3RealSoldierImporter
         cameraGO.tag = "MainCamera";
         var camera = cameraGO.AddComponent<Camera>();
         camera.fieldOfView = 55;
-        cameraGO.transform.position = new Vector3(0, 2.3f, -3.5f);
-        cameraGO.transform.LookAt(new Vector3(0, 1.2f, 0));
+        // Focus on imported mesh bounds rather than guessing its origin.
+        bounds = GetBounds(visual);
+        Vector3 center = bounds.center;
+        float distance = Mathf.Max(3.5f, bounds.size.magnitude * 1.8f);
+        cameraGO.transform.position = center + new Vector3(0, Mathf.Max(0.5f, bounds.size.y * .10f), -distance);
+        cameraGO.transform.LookAt(center);
         cameraGO.AddComponent<AudioListener>();
 
         var movement = player.AddComponent<WW3SoldierMovement>();
         movement.followCamera = camera;
+        foreach (var renderer in visibleMeshes)
+        {
+            if (!renderer.gameObject.activeInHierarchy) renderer.gameObject.SetActive(true);
+            renderer.enabled = true;
+            var skinned = renderer as SkinnedMeshRenderer;
+            if (skinned != null) skinned.updateWhenOffscreen = true;
+        }
+        Debug.Log("WW3: Model has " + visibleMeshes.Length + " renderers, size " + bounds.size);
 
         EditorSceneManager.SaveScene(scene, ScenePath);
         WriteAudit(source, visual);
