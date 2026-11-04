@@ -20,6 +20,21 @@ public static class WW3RealSoldierImporter
         EditorApplication.delayCall += TryCreateFromImportedModel;
     }
 
+    private sealed class WW3SoldierGLBPostprocessor : AssetPostprocessor
+    {
+        private static void OnPostprocessAllAssets(
+            string[] importedAssets, string[] deletedAssets, string[] movedAssets,
+            string[] movedFromAssetPaths)
+        {
+            if (Array.Exists(importedAssets, path =>
+                path.StartsWith(ModelFolder + "/", StringComparison.Ordinal) &&
+                path.EndsWith(".glb", StringComparison.OrdinalIgnoreCase)))
+            {
+                EditorApplication.delayCall += TryCreateFromImportedModel;
+            }
+        }
+    }
+
     private static void TryCreateFromImportedModel()
     {
         if (EditorApplication.isCompiling || EditorApplication.isPlayingOrWillChangePlaymode) return;
